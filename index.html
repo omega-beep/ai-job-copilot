@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Job Copilot</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f6fa;
+      padding: 30px;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    textarea, input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #45a049;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      margin-top: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .section-title {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    ul {
+      margin: 5px 0 15px 20px;
+    }
+
+    .score {
+      font-size: 18px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>AI Job Copilot</h1>
+
+  <textarea id="jd" rows="6" placeholder="Paste Job Description"></textarea>
+
+  <input id="company" placeholder="Company Name">
+  <input id="role" placeholder="Role">
+  <input id="name" placeholder="Your Name">
+  <input id="skills" placeholder="Your Skills (comma separated)">
+
+  <button onclick="generate()">Generate</button>
+
+  <div id="output"></div>
+
+  <script>
+    async function generate() {
+      const jd = document.getElementById("jd").value;
+      const company = document.getElementById("company").value;
+      const role = document.getElementById("role").value;
+      const name = document.getElementById("name").value;
+      const skills = document.getElementById("skills").value;
+
+      document.getElementById("output").innerHTML = "Generating...";
+
+      try {
+        const response = await fetch("http://127.0.0.1:5678/webhook/generate-cover-letter", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            job_description: jd,
+            company: company,
+            role: role,
+            name: name,
+            skills: skills
+          })
+        });
+
+        const data = await response.json();
+
+        // fallback safety
+        const analysis = data.analysis || {};
+
+        const html = `
+        <div class="card">
+          <h2>Cover Letter</h2>
+          <p>${(data.cover_letter || "").replace(/\n/g, "<br>")}</p>
+        </div>
+
+        <div class="card">
+          <div class="score">Match Score: ${analysis.match_score ?? "N/A"}</div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">Matched Skills</div>
+          <ul>${(analysis.matched_skills || []).map(s => `<li>${s}</li>`).join("")}</ul>
+
+          <div class="section-title">Missing Skills</div>
+          <ul>${(analysis.missing_skills || []).map(s => `<li>${s}</li>`).join("")}</ul>
+
+          <div class="section-title">Strengths</div>
+          <ul>${(analysis.strengths || []).map(s => `<li>${s}</li>`).join("")}</ul>
+
+          <div class="section-title">Weaknesses</div>
+          <ul>${(analysis.weaknesses || []).map(s => `<li>${s}</li>`).join("")}</ul>
+
+          <div class="section-title">Suggestions</div>
+          <ul>${(analysis.suggestions || []).map(s => `<li>${s}</li>`).join("")}</ul>
+        </div>
+        `;
+
+        document.getElementById("output").innerHTML = html;
+
+      } catch (err) {
+        document.getElementById("output").innerHTML = "Error connecting to backend.";
+      }
+    }
+  </script>
+
+</body>
+</html>
